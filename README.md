@@ -1,7 +1,7 @@
 # htmllisting-parser
 Python parser for Apache/nginx-style HTML directory listing
 
-```python3
+```python
 import htmllistparse
 cwd, listing = htmllistparse.fetch_listing(some_url)
 ```
