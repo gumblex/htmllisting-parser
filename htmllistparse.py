@@ -16,6 +16,7 @@ DATETIME_FMTs = (
 (re.compile(r'\d{4}-[A-S][a-y]{2}-\d+ \d+:\d{2}:\d{2}'), "%Y-%b-%d %H:%M:%S"),
 (re.compile(r'\d{4}-[A-S][a-y]{2}-\d+ \d+:\d{2}'), "%Y-%b-%d %H:%M"),
 (re.compile(r'[F-W][a-u]{2} [A-S][a-y]{2} +\d+ \d{2}:\d{2}:\d{2} \d{4}'), "%a %b %d %H:%M:%S %Y"),
+(re.compile(r'[F-W][a-u]{2}, \d+ [A-S][a-y]{2} \d{4} \d{2}:\d{2}:\d{2} .+'), "%a, %d %b %Y %H:%M:%S %Z"),
 (re.compile(r'\d{4}-\d+-\d+'), "%Y-%m-%d"),
 (re.compile(r'\d+/\d+/\d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}'), "%d/%m/%Y %H:%M:%S %z")
 )
@@ -66,7 +67,7 @@ def parse(soup):
     elif soup.h1:
         title = soup.h1.get_text().strip()
         if title.startswith('Index of '):
-            cwd = title.string[9:]
+            cwd = title[9:]
     [img.decompose() for img in soup.find_all('img')]
     file_name = file_mod = file_size = file_desc = None
     pres = [x for x in soup.find_all('pre') if
@@ -104,7 +105,7 @@ def parse(soup):
                     if sizestr == '-':
                         file_size = None
                     else:
-                        file_size = human2bytes(sizestr.replace(' ', ''))
+                        file_size = human2bytes(sizestr.replace(' ', '').replace(',', ''))
                     line = line[match.end():].lstrip()
                 if line:
                     file_desc = line.rstrip()
@@ -155,7 +156,7 @@ def parse(soup):
                                         "can't identify date/time format")
                         status += 1
                     elif heads[status] == 'size':
-                        sizestr = td.get_text().strip()
+                        sizestr = td.get_text().strip().replace(',', '')
                         if sizestr == '-' or not sizestr:
                             file_size = None
                         elif td.get('data-sort-value'):
