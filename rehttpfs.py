@@ -3,7 +3,6 @@
 
 import os
 import io
-import sys
 import stat
 import time
 import logging
@@ -221,7 +220,11 @@ class Directory:
             self.stat.settime(time.mktime(parsedate(lm)))
         else:
             self.stat.settime(time.time())
-        cwd, listing = parse_dir(req.content)
+        try:
+            cwd, listing = parse_dir(req.content)
+        except Exception:
+            logging.exception('failed to parse listing: ' + self.url)
+            listing = []
         content = ['.', '..']
         objmap = {}
         for name, modified, size, description in listing:
