@@ -1,2 +1,4 @@
 beautifulsoup4
 html5lib
+requests
+fusepy
