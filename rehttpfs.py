@@ -142,6 +142,10 @@ class File(io.IOBase):
     def read(self, size=None, offset=None):
         if not self.init or not self.stat.st_size:
             self.get_stat()
+        if not self.exist:
+            raise fuse.FuseOSError(ENOENT)
+        elif not self.readable():
+            raise fuse.FuseOSError(EIO)
         if offset is None:
             offset = self.offset
         end = min(self.stat.st_size, offset + size - 1)
@@ -341,6 +345,8 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
     def getattr(self, path, fh=None):
         logging.debug('getattr: %s', path)
         obj = self._getpath(path)
+        if not obj.exist:
+            raise fuse.FuseOSError(ENOENT)
         return obj.stat
 
     def open(self, path, flags):
@@ -371,6 +377,8 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Mount HTML directory listings.")
     parser.add_argument("-o", help="comma seperated FUSE options", metavar='OPTIONS')
+    parser.add_argument("-t", "--timeout", help="HTTP request timeout", type=int, default=30)
+    parser.add_argument("-u", "--user-agent", help="HTTP User-Agent")
     parser.add_argument("-v", "--verbose", help="enable debug logging", action='store_true')
     parser.add_argument("-d", "--daemon", help="run in background", action='store_true')
     parser.add_argument("url", help="URL to mount")
@@ -380,6 +388,8 @@ if __name__ == '__main__':
         format='%(levelname)s:%(name)s %(message)s',
         level=logging.DEBUG if args.verbose else logging.INFO
     )
+    CONFIG['timeout'] = args.timeout
+    CONFIG['user_agent'] = args.user_agent
     fuseobj = fuse.FUSE(
         rehttpfs(args.url),
         args.mountpoint,
