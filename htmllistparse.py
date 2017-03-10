@@ -9,10 +9,12 @@ import urllib.parse
 
 import bs4
 
+RE_ISO8601 = re.compile(r'\d{4}-\d+-\d+T\d+:\d{2}:\d{2}Z')
 DATETIME_FMTs = (
 (re.compile(r'\d+-[A-S][a-y]{2}-\d{4} \d+:\d{2}:\d{2}'), "%d-%b-%Y %H:%M:%S"),
 (re.compile(r'\d+-[A-S][a-y]{2}-\d{4} \d+:\d{2}'), "%d-%b-%Y %H:%M"),
 (re.compile(r'\d{4}-\d+-\d+ \d+:\d{2}:\d{2}'), "%Y-%m-%d %H:%M:%S"),
+(RE_ISO8601, "%Y-%m-%dT%H:%M:%SZ"),
 (re.compile(r'\d{4}-\d+-\d+ \d+:\d{2}'), "%Y-%m-%d %H:%M"),
 (re.compile(r'\d{4}-[A-S][a-y]{2}-\d+ \d+:\d{2}:\d{2}'), "%Y-%b-%d %H:%M:%S"),
 (re.compile(r'\d{4}-[A-S][a-y]{2}-\d+ \d+:\d{2}'), "%Y-%b-%d %H:%M"),
@@ -145,6 +147,12 @@ def parse(soup):
                             file_name = aherf2filename(a_href)
                             status = 1
                     elif heads[status] == 'modified':
+                        if td.time:
+                            timestr = td.time.get('datetime', '')
+                            if RE_ISO8601.match(timestr):
+                                file_mod = time.strptime(timestr, "%Y-%m-%dT%H:%M:%SZ")
+                                status += 1
+                                continue
                         timestr = td.get_text().strip()
                         if timestr:
                             for regex, fmt in DATETIME_FMTs:
@@ -154,9 +162,9 @@ def parse(soup):
                             else:
                                 if td.get('data-sort-value'):
                                     file_mod = time.gmtime(int(td['data-sort-value']))
-                                else:
-                                    raise AssertionError(
-                                        "can't identify date/time format")
+                                # else:
+                                    # raise AssertionError(
+                                        # "can't identify date/time format")
                         status += 1
                     elif heads[status] == 'size':
                         sizestr = td.get_text().strip().replace(',', '')
