@@ -166,7 +166,6 @@ def parse(soup):
                             file_size = int(td['data-sort-value'])
                         else:
                             match = RE_FILESIZE.match(sizestr)
-                            print(sizestr, match)
                             if match:
                                 file_size = human2bytes(
                                     match.group(0).replace(' ', ''))
