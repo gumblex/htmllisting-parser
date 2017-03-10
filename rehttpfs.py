@@ -269,7 +269,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
                 break
 
     def _getfileobj(self, path, refresh=False):
-        logging.info('_getfileobj: %s', path)
+        logging.debug('_getfileobj: %s', path)
         fileobj = self.metacache.get(path)
         try:
             if fileobj:
@@ -286,7 +286,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
         return fileobj
 
     def _getdirobj(self, path, refresh=False):
-        logging.info('_getdirobj: %s', path)
+        logging.debug('_getdirobj: %s', path)
         path = path.rstrip('/')
         dirobj = self.metacache.get(path)
         if dirobj:
@@ -318,7 +318,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
         return 0
 
     def getattr(self, path, fh=None):
-        logging.info('getattr: %s', path)
+        logging.debug('getattr: %s', path)
         obj = self._getpath(path)
         return obj.stat
 
@@ -335,7 +335,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
         return fileobj.read(size, offset)
 
     def readdir(self, path, fh):
-        logging.info('readdir: %s', path)
+        logging.debug('readdir: %s', path)
         dirobj = self._getdirobj(path)
         if dirobj.init != 2:
             objmap = dirobj.read()
@@ -352,5 +352,5 @@ if __name__ == '__main__':
         print('usage: %s <url> <mountpoint>' % sys.argv[0])
         sys.exit(1)
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     fuseobj = fuse.FUSE(rehttpfs(sys.argv[1]), sys.argv[2], foreground=True)
