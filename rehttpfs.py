@@ -130,7 +130,7 @@ class File(io.IOBase):
         return self.stat
 
     def read(self, size=None, offset=None):
-        if not self.init:
+        if not self.init or not self.stat.st_size:
             self.get_stat()
         if offset is None:
             offset = self.offset
@@ -141,6 +141,10 @@ class File(io.IOBase):
                           stream=True, timeout=CONFIG['timeout'])
         if req.status_code == 206:
             self._seekable = True
+        elif req.status_code == 416:
+            # we may have a wrong size
+            self.get_stat()
+            raise fuse.FuseOSError(EIO)
         elif req.status_code == 200:
             self._seekable = False
             if offset != 0:
@@ -231,9 +235,11 @@ class Directory:
                 fileobj.stat.settime(calendar.timegm(modified))
             else:
                 fileobj.stat.settime(self.stat.st_mtime)
-            if size:
-                fileobj.stat.st_size = size
             fileobj.init = 1
+            if size is None:
+                fileobj.get_stat()
+            else:
+                fileobj.stat.st_size = size
             content.append(name.rstrip('/'))
             objmap[fpath] = fileobj
         self.content = content
