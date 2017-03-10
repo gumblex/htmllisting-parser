@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import time
 import collections
@@ -51,6 +52,10 @@ def human2bytes(s):
             prefix[s] = 1 << (i+1)*10
         return int(num * prefix[letter])
 
+def aherf2filename(a_href):
+    isdir = ('/' if a_href[-1] == '/' else '')
+    return os.path.basename(urllib.parse.unquote(a_href.rstrip('/'))) + isdir
+
 def parse(soup):
     '''
     Try to parse apache/nginx-style directory listing with all kinds of tricks.
@@ -86,7 +91,7 @@ def parse(soup):
                     if file_name:
                         listing.append(FileEntry(
                             file_name, file_mod, file_size, file_desc))
-                    file_name = urllib.parse.unquote(element['href'])
+                    file_name = aherf2filename(element['href'])
                     file_mod = file_size = file_desc = None
                 elif (element.string in ('Parent Directory', '..', '../') or
                       element['href'][0] not in '?/'):
@@ -137,9 +142,7 @@ def parse(soup):
                         elif a_str == 'Parent Directory' or a_href == '../':
                             break
                         else:
-                            file_name = urllib.parse.unquote(a_href)
-                            if file_name.endswith(a_str):
-                                file_name = a_str
+                            file_name = aherf2filename(a_href)
                             status = 1
                     elif heads[status] == 'modified':
                         timestr = td.get_text().strip()
