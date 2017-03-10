@@ -44,6 +44,17 @@ def sizeof_fmt(num):
     return "%.1f%s" % (num, 'Y')
 
 
+def convert_fuse_options(options):
+    kwargs = {}
+    for opt in options.split(','):
+        kv = opt.split('=', 1)
+        if len(kv) == 1:
+            kwargs[kv[0]] = True
+        else:
+            kwargs[kv[0]] = kv[1]
+    return kwargs
+
+
 class IsADirectory(ValueError):
     pass
 
@@ -234,15 +245,15 @@ class Directory:
                 fpath = fpath.rstrip('/')
             else:
                 fileobj = File(self.baseurl, fpath)
+                if size is None:
+                    fileobj.get_stat()
+                else:
+                    fileobj.stat.st_size = size
             if modified:
                 fileobj.stat.settime(calendar.timegm(modified))
             else:
                 fileobj.stat.settime(self.stat.st_mtime)
-            fileobj.init = 1
-            if size is None:
-                fileobj.get_stat()
-            else:
-                fileobj.stat.st_size = size
+            fileobj.init = fileobj.init or 1
             content.append(name.rstrip('/'))
             objmap[fpath] = fileobj
         self.content = content
@@ -359,6 +370,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Mount HTML directory listings.")
+    parser.add_argument("-o", help="comma seperated FUSE options", metavar='OPTIONS')
     parser.add_argument("-v", "--verbose", help="enable debug logging", action='store_true')
     parser.add_argument("-d", "--daemon", help="run in background", action='store_true')
     parser.add_argument("url", help="URL to mount")
@@ -368,4 +380,9 @@ if __name__ == '__main__':
         format='%(levelname)s:%(name)s %(message)s',
         level=logging.DEBUG if args.verbose else logging.INFO
     )
-    fuseobj = fuse.FUSE(rehttpfs(args.url), args.mountpoint, foreground=(not args.daemon))
+    fuseobj = fuse.FUSE(
+        rehttpfs(args.url),
+        args.mountpoint,
+        foreground=(not args.daemon),
+        **convert_fuse_options(args.o)
+    )
