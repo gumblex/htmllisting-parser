@@ -32,17 +32,22 @@ Reinvented HTTP Filesystem.
 * Supports Keep-Alive.
 
 ```
-usage: rehttpfs.py [-h] [-o O] [-v] [-d] url mountpoint
+usage: rehttpfs.py [-h] [-o OPTIONS] [-t TIMEOUT] [-u USER_AGENT] [-v] [-d]
+                   url mountpoint
 
 Mount HTML directory listings.
 
 positional arguments:
-  url            URL to mount
-  mountpoint     filesystem mount point
+  url                   URL to mount
+  mountpoint            filesystem mount point
 
 optional arguments:
-  -h, --help     show this help message and exit
-  -o OPTIONS     comma seperated FUSE options
-  -v, --verbose  enable debug logging
-  -d, --daemon   run in background
+  -h, --help            show this help message and exit
+  -o OPTIONS            comma seperated FUSE options
+  -t TIMEOUT, --timeout TIMEOUT
+                        HTTP request timeout
+  -u USER_AGENT, --user-agent USER_AGENT
+                        HTTP User-Agent
+  -v, --verbose         enable debug logging
+  -d, --daemon          run in background
 ```
