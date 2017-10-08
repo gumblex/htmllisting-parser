@@ -374,7 +374,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
         return content
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description="Mount HTML directory listings.")
     parser.add_argument("-o", help="comma seperated FUSE options", metavar='OPTIONS')
     parser.add_argument("-t", "--timeout", help="HTTP request timeout", type=int, default=30)
@@ -396,3 +396,7 @@ if __name__ == '__main__':
         foreground=(not args.daemon),
         **convert_fuse_options(args.o)
     )
+
+
+if __name__ == '__main__':
+    main()
