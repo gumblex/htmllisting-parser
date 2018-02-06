@@ -9,11 +9,9 @@ except ImportError:
 if sys.version_info < (3, 3):
     raise NotImplementedError("You need at least Python 3.3.")
 
-import htmllistparse
-
 setup(
     name='htmllistparse',
-    version=htmllistparse.__version__,
+    version='0.2',
     description='Python parser for Apache/nginx-style HTML directory listing.',
     long_description=open('README.rst', 'r').read(),
     author='Dingyuan Wang',
