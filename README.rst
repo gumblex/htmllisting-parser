@@ -24,6 +24,9 @@ Supports:
 * Many other ``<table>``-style index
 * ``<ul>``-style
 
+.. note::
+   Please wrap the functions in a general ``try... except`` block. It may throw exceptions unexpectedly.
+
 ReHTTPFS
 --------
 

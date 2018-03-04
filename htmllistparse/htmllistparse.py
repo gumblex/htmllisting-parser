@@ -21,7 +21,8 @@ DATETIME_FMTs = (
 (re.compile(r'[F-W][a-u]{2} [A-S][a-y]{2} +\d+ \d{2}:\d{2}:\d{2} \d{4}'), "%a %b %d %H:%M:%S %Y"),
 (re.compile(r'[F-W][a-u]{2}, \d+ [A-S][a-y]{2} \d{4} \d{2}:\d{2}:\d{2} .+'), "%a, %d %b %Y %H:%M:%S %Z"),
 (re.compile(r'\d{4}-\d+-\d+'), "%Y-%m-%d"),
-(re.compile(r'\d+/\d+/\d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}'), "%d/%m/%Y %H:%M:%S %z")
+(re.compile(r'\d+/\d+/\d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}'), "%d/%m/%Y %H:%M:%S %z"),
+(re.compile(r'\d{2} [A-S][a-y]{2} \d{4}'), "%d %b %Y")
 )
 
 RE_FILESIZE = re.compile(r'\d+(\.\d+)? ?[BKMGTPEZY]|\d+|-', re.I)
@@ -69,7 +70,7 @@ def parse(soup):
     '''
     cwd = None
     listing = []
-    if soup.title and soup.title.string.startswith('Index of '):
+    if soup.title and soup.title.string and soup.title.string.startswith('Index of '):
         cwd = soup.title.string[9:]
     elif soup.h1:
         title = soup.h1.get_text().strip()
@@ -132,6 +133,8 @@ def parse(soup):
                 if tr.parent.name in ('thead', 'tfoot') or tr.th:
                     continue
                 for td in tr.find_all('td'):
+                    if status >= len(heads):
+                        raise AssertionError("can't detect table column number")
                     if td.get('colspan'):
                         continue
                     elif heads[status] == 'name':
@@ -195,7 +198,11 @@ def parse(soup):
                 continue
             elif tr.find(string=RE_COMMONHEAD):
                 namefound = False
+                colspan = False
                 for th in (tr.find_all('th') if tr.th else tr.find_all('td')):
+                    if th.get('colspan'):
+                        colspan = True
+                        continue
                     name = th.get_text().strip(' \t\n\r\x0b\x0c\xa0↑↓').lower()
                     if not name:
                         continue
@@ -212,7 +219,8 @@ def parse(soup):
                         heads.append('signature')
                     else:
                         heads.append('description')
-                # print(heads)
+                if colspan:
+                    continue
                 if not heads:
                     heads = ('name', 'modified', 'size', 'description')
                 elif not namefound:
