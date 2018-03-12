@@ -5,7 +5,7 @@ Python parser for Apache/nginx-style HTML directory listing
 .. code-block:: python
 
    import htmllistparse
-   cwd, listing = htmllistparse.fetch_listing(some_url)
+   cwd, listing = htmllistparse.fetch_listing(some_url, timeout=30)
 
    # or you can get the url and make a BeautifulSoup yourself, then use
    # cwd, listing = htmllistparse.parse(soup)
