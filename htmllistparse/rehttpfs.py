@@ -46,12 +46,13 @@ def sizeof_fmt(num):
 
 def convert_fuse_options(options):
     kwargs = {}
-    for opt in options.split(','):
-        kv = opt.split('=', 1)
-        if len(kv) == 1:
-            kwargs[kv[0]] = True
-        else:
-            kwargs[kv[0]] = kv[1]
+    if options is not None:
+        for opt in options.split(','):
+            kv = opt.split('=', 1)
+            if len(kv) == 1:
+                kwargs[kv[0]] = True
+            else:
+                kwargs[kv[0]] = kv[1]
     return kwargs
 
 
