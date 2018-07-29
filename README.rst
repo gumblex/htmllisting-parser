@@ -14,7 +14,7 @@ where ``cwd`` is the current directory, ``listing`` is a list of ``FileEntry`` n
 
 * ``name``: File name, ``str``. Have a trailing / if it's a directory.
 * ``modified``: Last modification time, ``time.struct_time`` or ``None``. Timezone is not known.
-* ``size``: File size, ``int`` or ``None``. May be estimated from the prefiex, such as "K", "M".
+* ``size``: File size, ``int`` or ``None``. May be estimated from the prefix, such as "K", "M".
 * ``description``: File description, file type, or any other things found. ``str`` as HTML, or ``None``.
 
 Supports:
@@ -50,7 +50,7 @@ Reinvented HTTP Filesystem.
 
    optional arguments:
      -h, --help            show this help message and exit
-     -o OPTIONS            comma seperated FUSE options
+     -o OPTIONS            comma separated FUSE options
      -t TIMEOUT, --timeout TIMEOUT
                            HTTP request timeout
      -u USER_AGENT, --user-agent USER_AGENT

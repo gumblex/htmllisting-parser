@@ -376,7 +376,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
 
 def main():
     parser = argparse.ArgumentParser(description="Mount HTML directory listings.")
-    parser.add_argument("-o", help="comma seperated FUSE options", metavar='OPTIONS')
+    parser.add_argument("-o", help="comma separated FUSE options", metavar='OPTIONS')
     parser.add_argument("-t", "--timeout", help="HTTP request timeout", type=int, default=30)
     parser.add_argument("-u", "--user-agent", help="HTTP User-Agent")
     parser.add_argument("-v", "--verbose", help="enable debug logging", action='store_true')
