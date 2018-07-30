@@ -46,12 +46,13 @@ def sizeof_fmt(num):
 
 def convert_fuse_options(options):
     kwargs = {}
-    for opt in options.split(','):
-        kv = opt.split('=', 1)
-        if len(kv) == 1:
-            kwargs[kv[0]] = True
-        else:
-            kwargs[kv[0]] = kv[1]
+    if options is not None:
+        for opt in options.split(','):
+            kv = opt.split('=', 1)
+            if len(kv) == 1:
+                kwargs[kv[0]] = True
+            else:
+                kwargs[kv[0]] = kv[1]
     return kwargs
 
 
@@ -376,7 +377,7 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
 
 def main():
     parser = argparse.ArgumentParser(description="Mount HTML directory listings.")
-    parser.add_argument("-o", help="comma seperated FUSE options", metavar='OPTIONS')
+    parser.add_argument("-o", help="comma separated FUSE options", metavar='OPTIONS')
     parser.add_argument("-t", "--timeout", help="HTTP request timeout", type=int, default=30)
     parser.add_argument("-u", "--user-agent", help="HTTP User-Agent")
     parser.add_argument("-v", "--verbose", help="enable debug logging", action='store_true')
