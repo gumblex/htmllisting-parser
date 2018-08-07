@@ -33,7 +33,7 @@ ReHTTPFS
 Reinvented HTTP Filesystem.
 
 * Mounts most HTTP file listings with FUSE.
-* Gets directory tree and file stats with less overHEAD.
+* Gets directory tree and file stats with less overhead.
 * Supports Range requests.
 * Supports Keep-Alive.
 
