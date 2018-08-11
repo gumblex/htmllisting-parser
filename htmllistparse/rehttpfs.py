@@ -13,9 +13,12 @@ from errno import EACCES, ENOENT, EIO
 from email.utils import parsedate
 
 import bs4
-import fuse
 import requests
 import htmllistparse
+try:
+    import fusepy as fuse
+except ImportError:
+    import fuse
 
 CONFIG = {
     'timeout': None,
