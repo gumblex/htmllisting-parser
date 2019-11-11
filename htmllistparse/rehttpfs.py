@@ -279,6 +279,8 @@ class rehttpfs(fuse.LoggingMixIn, fuse.Operations):
 
     def __init__(self, url):
         self.url = url
+        if url[-1] != '/':
+            self.url += '/'
         self.fd = 0
         self.metacache = {'/': Directory(self.url, '/')}
 
