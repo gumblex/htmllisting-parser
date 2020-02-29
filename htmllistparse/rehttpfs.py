@@ -220,7 +220,10 @@ class Directory:
         self._readable = True
 
     def read(self):
-        req = SESSION.get(self.url, timeout=CONFIG['timeout'])
+        try:
+            req = SESSION.get(self.url, timeout=CONFIG['timeout'])
+        except Exception:
+            raise fuse.FuseOSError(EIO)
         try:
             req.raise_for_status()
         except requests.exceptions.HTTPError:
