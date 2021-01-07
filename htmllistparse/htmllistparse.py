@@ -240,9 +240,9 @@ def parse(soup):
                 listing.append(FileEntry(file_name, None, None, None))
     return cwd, listing
 
-def fetch_listing(url, timeout=30):
+def fetch_listing(url, timeout=30, **requests_kwargs):
     import requests
-    req = requests.get(url, timeout=timeout)
+    req = requests.get(url, timeout=timeout, **requests_kwargs)
     req.raise_for_status()
     soup = bs4.BeautifulSoup(req.content, 'html5lib')
     return parse(soup)
