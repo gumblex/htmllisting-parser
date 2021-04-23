@@ -1,11 +1,20 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+try:
+  from builtins import map
+except:
+  pass
 
 import os
 import re
+import sys
 import time
 import collections
-import urllib.parse
+try:
+  from urllib.parse import unquote
+except:
+  from urllib import unquote
 
 import bs4
 
@@ -35,6 +44,12 @@ RE_HEAD_SIZE = re.compile('size|bytes$')
 
 FileEntry = collections.namedtuple('FileEntry', 'name modified size description')
 
+def convert(text):
+    if sys.version_info >= (3, 0):
+        return str(text)
+    else:
+        return text.encode('utf-8')
+
 def human2bytes(s):
     """
     >>> human2bytes('1M')
@@ -57,7 +72,7 @@ def human2bytes(s):
 
 def aherf2filename(a_href):
     isdir = ('/' if a_href[-1] == '/' else '')
-    return os.path.basename(urllib.parse.unquote(a_href.rstrip('/'))) + isdir
+    return os.path.basename(unquote(a_href.rstrip('/'))) + isdir
 
 def parse(soup):
     '''
@@ -184,7 +199,7 @@ def parse(soup):
                                 file_size = None
                         status += 1
                     elif heads[status] == 'description':
-                        file_desc = file_desc or ''.join(map(str, td.children)
+                        file_desc = file_desc or ''.join([convert(i) for i in td.children]
                                         ).strip(' \t\n\r\x0b\x0c\xa0') or None
                         status += 1
                     elif status:
@@ -203,7 +218,7 @@ def parse(soup):
                     if th.get('colspan'):
                         colspan = True
                         continue
-                    name = th.get_text().strip(' \t\n\r\x0b\x0c\xa0↑↓').lower()
+                    name = th.get_text().strip(u' \t\n\r\x0b\x0c\xa0↑↓').lower()
                     if not name:
                         continue
                     elif not namefound and RE_HEAD_NAME.search(name):
@@ -232,7 +247,7 @@ def parse(soup):
             a = li.a
             if not a or not a.get('href'):
                 continue
-            file_name = urllib.parse.unquote(a['href'])
+            file_name = unquote(a['href'])
             if (file_name in {'Parent Directory', '.', './', '..', '../', '#'}
                 or RE_ABSPATH.match(file_name)):
                 continue
