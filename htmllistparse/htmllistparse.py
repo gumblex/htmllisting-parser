@@ -96,8 +96,13 @@ def parse(soup):
                             file_name, file_mod, file_size, file_desc))
                     file_name = aherf2filename(element['href'])
                     file_mod = file_size = file_desc = None
-                elif (element.string in ('Parent Directory', '..', '../') or
-                      element['href'][0] not in '?/'):
+                elif element.string in ('Parent Directory', '..', '../'):
+                    # start with next a
+                    started = True
+                elif element['href'][0] not in '?/':
+                    # start right away
+                    file_name = aherf2filename(element['href'])
+                    file_mod = file_size = file_desc = None
                     started = True
             elif not element.name:
                 line = element.string.replace('\r', '').split('\n', 1)[0].lstrip()
