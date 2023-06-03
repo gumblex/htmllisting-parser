@@ -11,7 +11,7 @@ if sys.version_info < (3, 3):
 
 setup(
     name='htmllistparse',
-    version='0.6.0',
+    version='0.6.1',
     description='Python parser for Apache/nginx-style HTML directory listing.',
     long_description=open('README.rst', 'r').read(),
     author='Dingyuan Wang',
