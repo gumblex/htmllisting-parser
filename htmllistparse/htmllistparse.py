@@ -164,8 +164,9 @@ def parse(soup):
                         timestr = td.get_text().strip()
                         if timestr:
                             for regex, fmt in DATETIME_FMTs:
-                                if regex.match(timestr):
-                                    file_mod = time.strptime(timestr, fmt)
+                                match = regex.match(timestr)
+                                if match:
+                                    file_mod = time.strptime(match.group(0), fmt)
                                     break
                             else:
                                 if td.get('data-sort-value'):
