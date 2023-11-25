@@ -4,7 +4,7 @@
 import os
 import re
 import time
-import collections
+import typing
 import urllib.parse
 
 import bs4
@@ -33,7 +33,11 @@ RE_HEAD_NAME = re.compile('name$|^file|^download')
 RE_HEAD_MOD = re.compile('modifi|^uploaded|date|time')
 RE_HEAD_SIZE = re.compile('size|bytes$')
 
-FileEntry = collections.namedtuple('FileEntry', 'name modified size description')
+class FileEntry(typing.NamedTuple):
+    name: str
+    modified: typing.Optional[time.struct_time]
+    size: typing.Optional[int]
+    description: typing.Optional[str]
 
 def human2bytes(s):
     """
