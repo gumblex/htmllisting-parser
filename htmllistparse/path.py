@@ -3,11 +3,11 @@ import posixpath as _poxis
 import uritools as _uri
 import typing as _ty
 import requests as _req
-import bs4 as _bs4
 import io as _io
+import copy as _cp
 
-from .utils import FileStat, parsedate
-from .htmllistparse import parse
+from .utils import FileStat, parsedate, ls
+from .htmllistparse import FileEntry
 
 
 class PureUriPath(_pathlib.PurePath):
@@ -41,48 +41,108 @@ class PureUriPath(_pathlib.PurePath):
         return str(self)
 
 
-class HttpPath(PureUriPath):
+class UriPath(PureUriPath):
     __slots__ = ()
 
-    def _dirls_(self, session: _req.Session, **requests_args):
-        req = session.get(self.as_uri(), **requests_args)
-        req.raise_for_status()
-        soup = _bs4.BeautifulSoup(req.content, "html5lib")
-        _, listing = parse(soup)
-        return listing
+    def _dirls_(self) -> _ty.Iterator[FileEntry]:
+        raise NotImplementedError("dirls")
 
-    def iterdir(self, session: _req.Session = None, **requests_args):
-        session = session or _req.Session()
-        for child in self._dirls_(session, **requests_args):
+    def iterdir(self):
+        for child in self._dirls_():
             path = self / child.name
             yield path
 
-    def stat(
-        self, *, follow_symlinks=True, session: _req.Session = None, **requests_args
-    ):
-        session = session or _req.Session()
+    def stat(self) -> FileStat:
+        raise NotImplementedError()
+
+    def open(
+        self,
+        mode="r",
+        buffering=-1,
+        encoding=None,
+        errors=None,
+        newline=None,
+        session: _req.Session = None,
+        requests_args=None,
+    ) -> _io.IOBase:
+        raise NotImplementedError()
+
+    def read_bytes(self):
+        """
+        Open the file in bytes mode, read it, and close the file.
+        """
+        with self.open(mode="rb") as f:
+            return f.read()
+
+    def read_text(self, encoding=None, errors=None):
+        with self.open(mode="r", encoding=encoding, errors=errors) as f:
+            return f.read()
+
+    def exists(self, *, follow_symlinks=True):
+        try:
+            self.stat()
+            return True
+        except FileNotFoundError:
+            return False
+
+
+class HttpPath(UriPath):
+    __slots__ = ("_isdir", "_session", "_requests_args")
+    _isdir: bool
+    _session: _req.Session
+    _requests_args: dict
+
+    def __new__(cls, *args, **kwargs):
+        r = super().__new__(cls, *args, **kwargs)
+        r._isdir = None
+        r._session = _req.Session()
+        r._requests_args = {}
+        return r
+
+    @property
+    def parent(self):
+        p: HttpPath = super().parent
+        p._session = self._session
+        p._requests_args = self._requests_args
+        return p
+
+    def _dirls_(self):
+        return ls(self.as_uri(), self._session, **self._requests_args)
+
+    def iterdir(self):
+        for child in self._dirls_():
+            path = self / child.name
+            path._isdir = child.name.endswith("/")
+            yield path
+
+    def stat(self, *, follow_symlinks=True):
+        session = self._session
         url = self.as_uri()
-        req = session.head(url, **requests_args, allow_redirects=False)
+        req = session.head(url, **self._requests_args, allow_redirects=False)
         req.close()
-        is_dir = False
+        entry = None
+        if self._isdir is None:
+            self._isdir = req.status_code in (301, 302) or self._flavour.join(
+                self._raw_paths
+            ).endswith("/")
         if req.status_code == 404:
             raise FileNotFoundError(url)
         elif req.status_code == 403:
             raise PermissionError(url)
         elif req.status_code in (301, 302):
-            is_dir = True
+            pass
         else:
             req.raise_for_status()
         st_size = int(req.headers.get("Content-Length", 0))
         lm = req.headers.get("Last-Modified")
         if lm is None:
             parent = self.parent
-            if self != parent:
+            if self.parts[-1] != parent.parts[-1]:
                 try:
                     entry = next(
                         filter(
                             lambda p: p.name == self.name,
-                            parent._dirls_(session, **requests_args),
+                            parent._dirls_(),
                         )
                     )
                     if entry and entry.modified:
@@ -90,7 +150,7 @@ class HttpPath(PureUriPath):
                 except:
                     pass
 
-        return FileStat(st_size=st_size, st_mtime=parsedate(lm), is_dir=is_dir)
+        return FileStat(st_size=st_size, st_mtime=parsedate(lm), is_dir=self._isdir)
 
     def open(
         self,
@@ -103,8 +163,8 @@ class HttpPath(PureUriPath):
         requests_args=None,
     ):
         buffer_size = _io.DEFAULT_BUFFER_SIZE if buffering <= 0 else buffering
-        session = session or _req.Session()
-        requests_args = requests_args or {}
+        session = session or self._session
+        requests_args = requests_args or self._requests_args
         binary_mode = "b" in mode
         req = session.get(self.as_uri(), **requests_args, stream=True)
         buffer = (
@@ -120,13 +180,28 @@ class HttpPath(PureUriPath):
         buffer.seek(0)
         return buffer
 
-    def read_bytes(self):
-        """
-        Open the file in bytes mode, read it, and close the file.
-        """
-        with self.open(mode="rb") as f:
-            return f.read()
+    def is_dir(self):
+        if self._isdir is None:
+            self.stat()
+        return self._isdir
 
-    def read_text(self, encoding=None, errors=None):
-        with self.open(mode="r", encoding=encoding, errors=errors) as f:
-            return f.read()
+    def is_file(self):
+        return not self.is_dir()
+
+    def with_segments(self, *pathsegments):
+        r = super().with_segments(*pathsegments)
+        session = self._session
+        args = self._requests_args
+        for p in reversed(pathsegments):
+            if isinstance(p, HttpPath):
+                session = p._session
+                args = p._requests_args
+                break
+        r._session = session
+        r._requests_args = _cp.deepcopy(args)
+        return r
+
+    def with_session(self, session: _req.Session, **requests_args):
+        r = HttpPath(self)
+        r._session = session
+        r._requests_args = requests_args

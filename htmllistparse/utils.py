@@ -2,7 +2,18 @@ import stat as _stat
 import typing as _ty
 import time as _time
 from email.utils import parsedate as _parsedate
+import bs4 as _bs4
+from .htmllistparse import parse
 
+if _ty.TYPE_CHECKING:
+    import requests
+
+def ls(url, session: 'requests.Session', **requests_args):
+    req = session.get(url, **requests_args)
+    req.raise_for_status()
+    soup = _bs4.BeautifulSoup(req.content, "html5lib")
+    _, listing = parse(soup)
+    return listing
 
 def parsedate(date: _ty.Union[str, _time.struct_time, tuple, float]):
     if date is None:
