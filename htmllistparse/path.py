@@ -5,6 +5,7 @@ import typing as _ty
 import requests as _req
 import io as _io
 import copy as _cp
+import stat as _stat
 
 from .utils import FileStat, parsedate, ls
 from .htmllistparse import FileEntry
@@ -52,8 +53,20 @@ class UriPath(PureUriPath):
             path = self / child.name
             yield path
 
-    def stat(self) -> FileStat:
+    def iterdir_ext(self, recursive=False):
+        for child in self.iterdir():
+            yield child
+            if recursive and child.is_dir():
+                yield from child.iterdir_ext(True)
+
+    def stat(self, follow_symlinks=False) -> FileStat:
         raise NotImplementedError()
+
+    def is_dir(self, follow_symlinks=False):
+        return self.stat(follow_symlinks).st_mode & _stat.S_IFDIR
+
+    def is_file(self, follow_symlinks=False):
+        return self.stat(follow_symlinks).st_mode & _stat.S_IFREG
 
     def open(
         self,
@@ -84,6 +97,49 @@ class UriPath(PureUriPath):
             return True
         except FileNotFoundError:
             return False
+
+    def walk(self, top_down=True, on_error=None, follow_symlinks=False):
+        """Walk the directory tree from this directory, similar to os.walk()."""
+        paths: "list[UriPath|tuple[UriPath, list[str], list[str]]]" = [self]
+
+        while paths:
+            path = paths.pop()
+            if isinstance(path, tuple):
+                yield path
+                continue
+
+            # We may not have read permission for self, in which case we can't
+            # get a list of the files the directory contains. os.walk()
+            # always suppressed the exception in that instance, rather than
+            # blow up for a minor reason when (say) a thousand readable
+            # directories are still left to visit. That logic is copied here.
+            try:
+                scandir_it = path.iterdir()
+            except OSError as error:
+                if on_error is not None:
+                    on_error(error)
+                continue
+
+            dirnames:'list[str]' = []
+            filenames:'list[str]' = []
+            for entry in scandir_it:
+                try:
+                    is_dir = entry.is_dir(follow_symlinks=follow_symlinks)
+                except OSError:
+                    # Carried over from os.path.isdir().
+                    is_dir = False
+
+                if is_dir:
+                    dirnames.append(entry.name)
+                else:
+                    filenames.append(entry.name)
+
+            if top_down:
+                yield path, dirnames, filenames
+            else:
+                paths.append((path, dirnames, filenames))
+
+            paths += [path / d for d in reversed(dirnames)]
 
 
 class HttpPath(UriPath):
@@ -180,12 +236,12 @@ class HttpPath(UriPath):
         buffer.seek(0)
         return buffer
 
-    def is_dir(self):
+    def is_dir(self, follow_symlinks=False):
         if self._isdir is None:
             self.stat()
         return self._isdir
 
-    def is_file(self):
+    def is_file(self, follow_symlinks=False):
         return not self.is_dir()
 
     def with_segments(self, *pathsegments):
