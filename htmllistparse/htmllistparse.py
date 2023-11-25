@@ -4,7 +4,7 @@
 import os
 import re
 import time
-import collections
+import typing
 import urllib.parse
 
 import bs4
@@ -33,7 +33,11 @@ RE_HEAD_NAME = re.compile('name$|^file|^download')
 RE_HEAD_MOD = re.compile('modifi|^uploaded|date|time')
 RE_HEAD_SIZE = re.compile('size|bytes$')
 
-FileEntry = collections.namedtuple('FileEntry', 'name modified size description')
+class FileEntry(typing.NamedTuple):
+    name: str
+    modified: typing.Optional[time.struct_time]
+    size: typing.Optional[int]
+    description: typing.Optional[str]
 
 def human2bytes(s):
     """
@@ -55,11 +59,11 @@ def human2bytes(s):
             prefix[s] = 1 << (i+1)*10
         return int(num * prefix[letter])
 
-def aherf2filename(a_href):
+def aherf2filename(a_href:str):
     isdir = ('/' if a_href[-1] == '/' else '')
     return os.path.basename(urllib.parse.unquote(a_href.rstrip('/'))) + isdir
 
-def parse(soup):
+def parse(soup:bs4.BeautifulSoup):
     '''
     Try to parse apache/nginx-style directory listing with all kinds of tricks.
 
@@ -68,8 +72,8 @@ def parse(soup):
 
     Returns: Current directory, Directory listing
     '''
-    cwd = None
-    listing = []
+    cwd:typing.Optional[str] = None
+    listing:typing.List[FileEntry] = []
     if soup.title and soup.title.string and soup.title.string.startswith('Index of '):
         cwd = soup.title.string[9:]
     elif soup.h1:
@@ -246,7 +250,7 @@ def parse(soup):
                 listing.append(FileEntry(file_name, None, None, None))
     return cwd, listing
 
-def fetch_listing(url, timeout=30, **requests_kwargs):
+def fetch_listing(url:typing.Union[str, bytes], timeout=30, **requests_kwargs):
     import requests
     req = requests.get(url, timeout=timeout, **requests_kwargs)
     req.raise_for_status()
